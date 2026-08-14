@@ -8,6 +8,15 @@ Sin dependencias. Solo biblioteca estándar de Python.
 python3 watermark_demo.py
 ```
 
+Eso es todo. `watermark_demo.py` **no tiene dependencias**.
+
+Para verlo además sobre un modelo real:
+
+```bash
+pip install -r requirements.txt      # torch + transformers
+python3 watermark_hf.py --model distilgpt2
+```
+
 ---
 
 ## Por qué

@@ -1,0 +1,15 @@
+# OPCIONAL — solo para watermark_hf.py
+#
+# watermark_demo.py no necesita nada: se ejecuta con la biblioteca
+# estándar de Python. Esa es media gracia del repositorio.
+#
+#     python3 watermark_demo.py          # sin instalar nada
+#
+# Estas dependencias solo hacen falta para ver el watermark sobre un
+# modelo real:
+#
+#     pip install -r requirements.txt
+#     python3 watermark_hf.py --model distilgpt2
+
+torch>=2.0
+transformers>=4.30
