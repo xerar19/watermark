@@ -263,6 +263,37 @@ def exp_parafrasis(lm, key, gamma, delta, n, dedup=True):
     print("\n  No borra: diluye. Lo que no se reescribe sigue contando verdes.")
 
 
+def exp_clave(lm, key, gamma, delta, n, dedup=True):
+    """
+    ¿Se puede detectar la marca sin la clave? No.
+
+    La partición verde/roja se siembra con la clave secreta. Sin ella no se
+    sabe qué tokens eran verdes en cada posición, así que no hay contra qué
+    contar. Aquí se detecta el MISMO texto marcado con claves equivocadas:
+    el z-score vuelve al ruido.
+
+    Consecuencia: el esquema es SIMÉTRICO. Solo quien tiene la clave puede
+    verificar. El proveedor del modelo es a la vez emisor y juez, y ningún
+    tercero puede auditar el veredicto de forma independiente.
+    """
+    print("\n" + "=" * 68)
+    print("6 · SIN LA CLAVE NO HAY SEÑAL")
+    print("=" * 68)
+    toks, _ = generate(lm, n, key, gamma, delta, seed=17)
+
+    _, _, z_ok = detect(toks, key, lm.vocab, gamma, dedup)
+    print(f"  clave correcta ...................... z = {z_ok:6.2f}   {'detectado' if z_ok > 4 else 'no'}")
+    print()
+    for k in ("otra-clave", "clave-secreta-del-modelo-", "CLAVE-SECRETA-DEL-MODELO",
+              "clave-secreta-del-modelu", ""):
+        _, _, z = detect(toks, key + "X" if k == "" else k, lm.vocab, gamma, dedup)
+        etiqueta = repr(k) if k else "'...X' (un carácter de más)"
+        print(f"  {etiqueta:34} z = {z:6.2f}   {'detectado' if z > 4 else 'no'}")
+
+    print("\n  Un carácter de diferencia en la clave y la señal desaparece.")
+    print("  El esquema es simétrico: solo quien tiene la clave puede verificar.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Demo de watermarking estadístico")
     ap.add_argument("--delta", type=float, default=2.0, help="fuerza del sesgo (default 2.0)")
@@ -283,6 +314,7 @@ def main():
     exp_n(lm, args.key, args.gamma, args.delta, dedup)
     exp_entropia(args.key, args.gamma, args.delta, args.n, dedup)
     exp_parafrasis(lm, args.key, args.gamma, args.delta, args.n, dedup)
+    exp_clave(lm, args.key, args.gamma, args.delta, args.n, dedup)
 
     print("\n" + "=" * 68)
     print("Encuentra la marca → hay evidencia.")

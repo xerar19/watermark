@@ -97,6 +97,61 @@ Es el límite estructural de la técnica: una cifra, un nombre propio, una fórm
 
 Reescribir el 10 % apenas afecta. Hace falta reescribir la mitad para cruzar el umbral. Y lo que no se toca —cifras, nombres, términos técnicos— sigue contando verdes.
 
+### 6. Sin la clave no hay señal
+
+El mismo texto marcado, verificado con claves distintas:
+
+```
+  clave correcta ...................... z =  12.19   detectado
+
+  'otra-clave'                       z =   0.24   no
+  'clave-secreta-del-modelo-'        z =  -0.08   no
+  'CLAVE-SECRETA-DEL-MODELO'         z =   0.24   no
+  'clave-secreta-del-modelu'         z =  -0.08   no
+  '...X' (un carácter de más)        z =  -1.99   no
+```
+
+Un carácter de diferencia y la señal desaparece.
+
+---
+
+## La pregunta incómoda: ¿puedo detectarlo yo?
+
+No. Y no es un descuido de implementación: **es el diseño**.
+
+La partición verde/roja se siembra con la clave secreta y el token previo. Sin la clave no sabes qué tokens eran verdes en cada posición, así que no tienes contra qué contar. Para ti, "verde" es un subconjunto del vocabulario indistinguible de cualquier otro subconjunto arbitrario — y además cambia en cada paso.
+
+Es el mismo principio que un mensaje cifrado: puedes sospechar que hay algo, pero sin la clave no hay nada que leer. Aquí incluso peor, porque el esquema está diseñado precisamente para que el texto parezca estadísticamente normal a ojos de quien no tiene la clave.
+
+### ¿Y por aproximación?
+
+Dos vías teóricas, ninguna práctica:
+
+**Anomalías de perplejidad.** Un texto muy marcado es algo menos probable de lo que produciría el modelo limpio. Podrías medirlo… si tuvieras el modelo limpio. Y la señal es débil y ruidosa: no distingue un watermark de "este autor escribe raro".
+
+**Ataques de distinción por consulta masiva.** Con suficientes generaciones sobre los mismos contextos podrías estimar la distribución real del modelo y detectar desviaciones sistemáticas, incluso reconstruir parcialmente las listas verdes de los contextos más frecuentes. Es una línea de investigación activa. Requiere un volumen enorme de consultas y se complica de forma explosiva según cuántos tokens previos se usen para sembrar la partición: con uno hay `|V|` particiones posibles, con cuatro la combinatoria lo hace inviable.
+
+---
+
+## Lo que esto implica
+
+El esquema es **simétrico**: la misma clave firma y verifica.
+
+De ahí se sigue algo que no es un detalle técnico:
+
+**El proveedor del modelo es emisor y juez a la vez.** Ninguna de sus dos afirmaciones posibles es auditable desde fuera:
+
+- *"Este texto lo generó nuestro modelo"* → hay que creerle.
+- *"Este texto no lo generó"* → hay que creerle, y además esa afirmación tampoco se sostiene con la clave en la mano: un test estadístico no demuestra ausencia.
+
+Y el detector es, además, un **oráculo peligroso**. Cada consulta respondida filtra información sobre la clave. Publicarlo abierto le da al atacante un banco de pruebas para afinar paráfrasis hasta que dejen de detectarse. Cerrarlo impide que nadie verifique nada. No hay salida buena.
+
+### La alternativa que existe
+
+**Watermarking de clave pública**: cualquiera puede verificar, nadie puede falsificar. Resolvería el problema de la auditabilidad. Hay investigación en marcha, pero es menos maduro y suele pagar la asimetría en robustez.
+
+Anthropic no ha dicho qué usa. Todo apunta a un esquema simétrico.
+
 ---
 
 ## La trampa de la repetición
