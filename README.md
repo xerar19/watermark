@@ -151,6 +151,58 @@ Anthropic no ha dicho qué usa. Todo apunta a un esquema simétrico.
 
 ---
 
+## Sobre un modelo real: `watermark_hf.py`
+
+`watermark_demo.py` enseña la aritmética con un modelo de juguete. `watermark_hf.py` es lo que se escribiría en producción: un `LogitsProcessor` de HuggingFace que intercepta los logits **antes** del muestreo.
+
+```python
+class WatermarkLogitsProcessor(LogitsProcessor):
+    def __init__(self, particion, delta=2.0):
+        self.p, self.delta = particion, delta
+
+    def __call__(self, input_ids, scores):
+        for b in range(input_ids.shape[0]):
+            prev = int(input_ids[b, -1].item())
+            verdes = self.p.ids_verdes(prev).to(scores.device)
+            scores[b, verdes] += self.delta
+        return scores
+```
+
+Eso es todo. Veinte líneas contando la partición.
+
+```bash
+pip install torch transformers
+python3 watermark_hf.py --model distilgpt2 --delta 2.0
+```
+
+Ejecutado sobre `distilgpt2` (50.257 tokens, 12.564 verdes por posición, γ=0.25, δ=2.0):
+
+```
+SIN MARCAR  verdes   36/151  (23.8%)   z =  -0.33   no detectado
+MARCADO     verdes  102/153  (66.7%)   z =  11.90   detectado
+
+clave correcta ....... z =  11.90
+clave equivocada ..... z =  -0.79
+```
+
+Y el precio se ve a simple vista en el texto generado:
+
+```
+sin marcar:  «a fundamental pilot project that brought together the
+              Chicago Cultural Alliance (CCSAA), a small group of…»
+
+marcado:     «a button, the connector was taken from "tree" to the
+              "/tools" level and moved left to include the "reset…»
+```
+
+Con δ=2 sobre un modelo pequeño, el sesgo empuja donde no debería y el texto se resiente. Es el compromiso del que habla el experimento 2, en carne viva.
+
+**Y ese es el punto.** Implementar el watermark es trivial *cuando controlas la inferencia*. La dificultad no es técnica: es que hace falta estar dentro del stack. Desde una API alojada —sin acceso a los logits— no hay forma de hacerlo, ni con fine-tuning, porque no controlas el modelo.
+
+Existe una vía intermedia, *watermark distillation* ([Gu et al., ICML 2024](https://arxiv.org/abs/2312.04469)): entrenar un modelo para que genere texto marcado sin intervenir el decoder. Funciona con buena detectabilidad, y permite marcar modelos abiertos donde el usuario controla el sampling. Con dos límites documentados: el watermark se pierde al hacer fine-tuning sobre texto normal, y aprender marcas de baja distorsión exige muchísimas muestras. Y una consecuencia incómoda: si la marca es aprendible, es **falsificable** — un adversario puede generar texto dañino con la marca de otro.
+
+---
+
 ## La trampa de la repetición
 
 Sin filtrar pares `(previo, token)` repetidos, un texto repetitivo **infla el z-score** y produce falsos positivos: si un par frecuente cae en verde, suma una y otra vez. El test asume observaciones independientes, y la repetición rompe ese supuesto.
