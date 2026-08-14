@@ -282,13 +282,13 @@ def exp_clave(lm, key, gamma, delta, n, dedup=True):
     toks, _ = generate(lm, n, key, gamma, delta, seed=17)
 
     _, _, z_ok = detect(toks, key, lm.vocab, gamma, dedup)
-    print(f"  clave correcta ...................... z = {z_ok:6.2f}   {'detectado' if z_ok > 4 else 'no'}")
+    print(f"  {'clave correcta':<34} z = {z_ok:6.2f}   {'detectado' if z_ok > 4 else 'no'}")
     print()
     for k in ("otra-clave", "clave-secreta-del-modelo-", "CLAVE-SECRETA-DEL-MODELO",
               "clave-secreta-del-modelu", ""):
         _, _, z = detect(toks, key + "X" if k == "" else k, lm.vocab, gamma, dedup)
-        etiqueta = repr(k) if k else "'...X' (un carácter de más)"
-        print(f"  {etiqueta:34} z = {z:6.2f}   {'detectado' if z > 4 else 'no'}")
+        etiqueta = repr(k) if k else "'…X' (un carácter de más)"
+        print(f"  {etiqueta:<34} z = {z:6.2f}   {'detectado' if z > 4 else 'no'}")
 
     print("\n  Un carácter de diferencia en la clave y la señal desaparece.")
     print("  El esquema es simétrico: solo quien tiene la clave puede verificar.")

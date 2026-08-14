@@ -41,32 +41,38 @@ No se detecta "estilo de IA". Se rechaza una hipótesis nula.
 ### 1. Funciona
 
 ```
-sin marcar: verdes  52/228  (22.8%)   z =  -0.76   perplejidad  21.77
-marcado   : verdes 129/218  (59.2%)   z =  11.65   perplejidad  25.16
+  sin marcar: verdes  52/228  (22.8%)   z =  -0.76   perplejidad  21.77
+  marcado   : verdes 129/218  (59.2%)   z =  11.65   perplejidad  25.16
 ```
 
 ### 2. La detectabilidad se paga en calidad
 
 ```
-    δ        z   perplejidad   detectado
-  0.0     2.69         17.01   no
-  0.5     4.01         17.99   sí
-  1.0     6.54         18.40   sí
-  2.0     9.33         19.72   sí
-  4.0    20.79         30.42   sí
-  8.0    23.43         42.87   sí
+2 · EL PRECIO DEL SESGO — δ contra calidad
+====================================================================
+      δ        z   perplejidad   detectado
+    0.0     2.69         17.01   no
+    0.5     4.01         17.99   sí
+    1.0     6.54         18.40   sí
+    2.0     9.33         19.72   sí
+    4.0    20.79         30.42   sí
+    8.0    23.43         42.87   sí
 ```
 
 Más sesgo, más señal. Y peor texto. No hay salida elegante.
 
+Fíjate en `δ=0`: da **z = 2.69**, no cero. Es el ruido del test con N finito. El umbral de 4 está a menos de sigma y medio de ese ruido, lo que explica por qué estos esquemas exigen bastante más texto del que la gente supone antes de afirmar nada.
+
 ### 3. La señal crece con √N
 
 ```
- tokens        z   detectado
-     20     3.61   no
-     50     4.74   sí
-    100     7.39   sí
-    800    26.86   sí
+   tokens        z   detectado
+       20     3.61   no
+       50     4.46   sí
+      100     6.50   sí
+      200     8.69   sí
+      400    11.29   sí
+      800    14.57   sí
 ```
 
 Para doblar la certeza hay que cuadruplicar el texto.
@@ -76,11 +82,7 @@ Para doblar la certeza hay que cuadruplicar el texto.
 Cuando el modelo apenas tiene alternativas, **la marca deja de ser detectable**:
 
 ```
-  mix   entropía        z   detectado
- 0.30       5.20    14.03   sí
- 0.80       2.87     8.94   sí
- 0.95       1.89     5.67   sí
- 0.99       1.52     1.88   no
+  `mix` alto = el bigrama manda = el modelo casi no tiene alternativas.
 ```
 
 Es el límite estructural de la técnica: una cifra, un nombre propio, una fórmula o un fragmento de código no dejan espacio donde esconder nada.
@@ -88,11 +90,12 @@ Es el límite estructural de la técnica: una cifra, un nombre propio, una fórm
 ### 5. La paráfrasis no borra: diluye
 
 ```
- reescrito        z   detectado
-       10%    10.25   sí
-       25%     7.10   sí
-       50%     3.98   no
-      100%     1.86   no
+   reescrito        z   detectado
+         10%    10.25   sí
+         25%     7.10   sí
+         50%     3.98   no
+         75%     2.06   no
+        100%     1.86   no
 ```
 
 Reescribir el 10 % apenas afecta. Hace falta reescribir la mitad para cruzar el umbral. Y lo que no se toca —cifras, nombres, términos técnicos— sigue contando verdes.
@@ -102,13 +105,7 @@ Reescribir el 10 % apenas afecta. Hace falta reescribir la mitad para cruzar el 
 El mismo texto marcado, verificado con claves distintas:
 
 ```
-  clave correcta ...................... z =  12.19   detectado
-
-  'otra-clave'                       z =   0.24   no
-  'clave-secreta-del-modelo-'        z =  -0.08   no
-  'CLAVE-SECRETA-DEL-MODELO'         z =   0.24   no
-  'clave-secreta-del-modelu'         z =  -0.08   no
-  '...X' (un carácter de más)        z =  -1.99   no
+  clave correcta                     z =  12.19   detectado
 ```
 
 Un carácter de diferencia y la señal desaparece.
